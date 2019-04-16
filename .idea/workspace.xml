@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="e024f70e-23bf-42e3-a0a7-d4da14e78077" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/classes/node.py" beforeDir="false" afterPath="$PROJECT_DIR$/classes/node.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -19,8 +18,8 @@
             <file pinned="false" current-in-tab="true">
               <entry file="file://$PROJECT_DIR$/../../try 2/classes/node.py">
                 <provider selected="true" editor-type-id="text-editor">
-                  <state relative-caret-position="527">
-                    <caret line="40" column="41" lean-forward="true" selection-start-line="40" selection-start-column="41" selection-end-line="40" selection-end-column="41" />
+                  <state relative-caret-position="252">
+                    <caret line="29" column="34" lean-forward="true" selection-start-line="29" selection-start-column="34" selection-end-line="29" selection-end-column="34" />
                     <folding>
                       <element signature="e#0#13#0" expanded="true" />
                     </folding>
@@ -51,7 +50,7 @@
         <entry file="file://$PROJECT_DIR$/classes/node.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="25">
-              <caret line="32" column="13" lean-forward="true" selection-start-line="32" selection-start-column="13" selection-end-line="32" selection-end-column="13" />
+              <caret line="29" column="29" selection-start-line="29" selection-start-column="29" selection-end-line="29" selection-end-column="29" />
               <folding>
                 <element signature="e#0#13#0" expanded="true" />
               </folding>
@@ -62,7 +61,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="400">
+            <state relative-caret-position="775">
               <caret line="31" column="26" selection-start-line="31" selection-start-column="8" selection-end-line="31" selection-end-column="26" />
               <folding>
                 <element signature="e#0#29#0" expanded="true" />
@@ -169,12 +168,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1555418050221</updated>
-      <workItem from="1555418052549" duration="12210000" />
+      <workItem from="1555418052549" duration="14227000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="12210000" />
+    <option name="totallyTimeSpent" value="14227000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-7" y="-7" width="1550" height="838" extended-state="6" />
@@ -240,19 +239,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/../../try 2/classes/node.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="527">
-          <caret line="40" column="41" lean-forward="true" selection-start-line="40" selection-start-column="41" selection-end-line="40" selection-end-column="41" />
-          <folding>
-            <element signature="e#0#13#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="400">
+        <state relative-caret-position="775">
           <caret line="31" column="26" selection-start-line="31" selection-start-column="8" selection-end-line="31" selection-end-column="26" />
           <folding>
             <element signature="e#0#29#0" expanded="true" />
@@ -263,7 +252,17 @@
     <entry file="file://$PROJECT_DIR$/classes/node.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="25">
-          <caret line="32" column="13" lean-forward="true" selection-start-line="32" selection-start-column="13" selection-end-line="32" selection-end-column="13" />
+          <caret line="29" column="29" selection-start-line="29" selection-start-column="29" selection-end-line="29" selection-end-column="29" />
+          <folding>
+            <element signature="e#0#13#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../try 2/classes/node.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="252">
+          <caret line="29" column="34" lean-forward="true" selection-start-line="29" selection-start-column="34" selection-end-line="29" selection-end-column="34" />
           <folding>
             <element signature="e#0#13#0" expanded="true" />
           </folding>

@@ -20,45 +20,58 @@ class Node:
 
     #// ask node n to find the successor of id
     def find_successor(self, id):
-        successor = self.finger_table[0]
-        if (id > self.id  and id <= successor[0] ):
+
+        if(id > self.id and id <= self.finger_table[0]):
             successor = {
-
-
-                "successor": successor[2]
-
+                "successor": self.finger_table[0]
             }
             return successor
-            # return [self, successor[2]]
         else:
-            maxLessThanK = successor[0]
-            maxLessThanKNode = successor[2]
-            for i in range(DHT_BITS):
-                if (self.finger_table[i][0] > maxLessThanK and maxLessThanK < id):
-                    maxLessThanK = self.finger_table[i][0]
-                    maxLessThanKNode = self.finger_table[i][2]
-            if (maxLessThanK == successor[0]):
-                successor = {
+            maxLessThanK = fi
+        # successor = self.finger_table[0]
+        # if (id > self.id  and id <= successor[0] ):
+        #     successor = {
+        #
+        #
+        #         "successor": successor[2]
+        #
+        #     }
+        #     return successor
+        #     # return [self, successor[2]]
+        # else:
+        #     maxLessThanK = successor[0]
+        #     maxLessThanKNode = successor[2]
+        #     for i in range(DHT_BITS):
+        #         if (self.finger_table[i][0] > maxLessThanK and maxLessThanK < id):
+        #             maxLessThanK = self.finger_table[i][0]
+        #             maxLessThanKNode = self.finger_table[i][2]
+        #     if (maxLessThanK == successor[0]):
+        #         successor = {
+        #
+        #
+        #             "successor": self
+        #
+        #         }
+        #         return successor
+        #
+        #
+        #
+        #     successor_data = {
+        #
+        #         'name': maxLessThanKNode.name
+        #     }
+        #
+        #     successor_command = Command('FIND_SUCCESSOR', successor_data)
+        #
+        #     s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #     send_command(s2, maxLessThanKNode.ip, maxLessThanKNode.port,successor_command)
+        #
+        #     return recieve_command(s2)
 
 
-                    "successor": self
-
-                }
-                return successor
 
 
 
-            successor_data = {
-
-                'name': maxLessThanKNode.name
-            }
-
-            successor_command = Command('FIND_SUCCESSOR', successor_data)
-
-            s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            send_command(s2, maxLessThanKNode.ip, maxLessThanKNode.port,successor_command)
-
-            return recieve_command(s2)
 
     #// search the local table for the highest predecessor of id
     # def closest_preceding_node(self, id):
