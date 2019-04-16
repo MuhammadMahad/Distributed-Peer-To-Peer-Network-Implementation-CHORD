@@ -20,22 +20,79 @@ class Node:
 
     #// ask node n to find the successor of id
     def find_successor(self, id):
-        pass
+        successor = self.finger_table[0]
+        if (id > self.id  and id <= successor[0] ):
+            successor = {
+
+
+                "successor": successor[2]
+
+            }
+            return successor
+            # return [self, successor[2]]
+        else:
+            maxLessThanK = successor[0]
+            maxLessThanKNode = successor[2]
+            for i in range(DHT_BITS):
+                if (self.finger_table[i][0] > maxLessThanK and maxLessThanK < id):
+                    maxLessThanK = self.finger_table[i][0]
+                    maxLessThanKNode = self.finger_table[i][2]
+            if (maxLessThanK == successor[0]):
+                successor = {
+
+
+                    "successor": self
+
+                }
+                return successor
+
+
+
+            successor_data = {
+
+                'name': maxLessThanKNode.name
+            }
+
+            successor_command = Command('FIND_SUCCESSOR', successor_data)
+
+            s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            send_command(s2, maxLessThanKNode.ip, maxLessThanKNode.port,successor_command)
+
+            return recieve_command(s2)
 
     #// search the local table for the highest predecessor of id
-    def closest_preceding_node(self, id):
-        pass
+    # def closest_preceding_node(self, id):
+    #     pass
 
     @staticmethod
     #// create a new Chord ring
-    def create(self, ip, port):
-        node = Node(ip, port, None, self)
+    def create(self, ip, port, predecessor, successor):
+        node = Node(ip, port, predecessor, successor)
         listening_server(node)
 
     #// join a Chord ring containing node n
-    def join(self, existing_node, id): #existing node = n'
+    def join(self, my_ip, my_port, n_ip, n_port): #existing node = n'
+
+        my_name = my_ip + str(my_port)
+        successor_data = {
+
+            "name": my_name
+
+        }
+        successor_command = Command('FIND_SUCCESSOR', successor_data)
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        send_command(s, n_ip, n_port, successor_command)
+
+        successor_command_recv = recieve_command(s)
+
+        successor = successor_command_recv.data["successor"]
         predecessor = None
-        successor = existing_node.find_successor(id)
+
+        node = Node.create(my_ip, my_port, predecessor, successor)
+        # id =
+        # predecessor = None
+        # successor = existing_node.find_successor(id)
         #call create node and start node's server
         # node = node.create(node, ip, port, )
 
@@ -53,12 +110,43 @@ class Node:
     #// next stores the index of the next finger to fix.
 
     def fix_fingers(self): #in thread
-        pass
+        start_new_thread(fix_fingers_thread, (self,))
+
 
     #// called periodically. checks whether predecessor has failed.
     def check_predecessor(self): #in thread
         pass
 
+
+def fix_fingers_thread(node):
+    pass
+
+    #next = next + 1 ;
+    #if (next > m)
+    #next = 1 ;
+    #finger[next] = find successor(n + 2
+    #next−1
+    #);
+
+
+
+def send_command(s, ip_to_send_to, port_to_send_to, command_to_send):
+
+    command_to_send = pickle.dumps(command_to_send)
+    # node_port = randint(1000, 9999)
+
+
+
+    addr = (ip_to_send_to, int(port_to_send_to))
+    s.connect(addr)
+
+    s.send(command_to_send)
+
+def recieve_command(s):
+
+    recieved_command = pickle.loads(s.recv(1024))
+
+    return recieved_command
 
 
 
@@ -100,9 +188,21 @@ def threaded_listen(node):
             print("no data received")
             break
 
-        if(command.type == 'JOIN'):
-            print('Recieving Join Command')
+        if(command.type == 'FIND_SUCCESSOR'):
+            print('Recieving FIND_SUCCESSOR Command')
 
+            id = hashfunc(command.data["name"])
+            n_successor = node.find_successor(id)
+
+            successor_data = {
+
+                "successor": n_successor
+
+            }
+
+            successor_command_send = ('SENDING_SUCCESSOR', successor_data)
+
+            conn.send(pickle.dumps(successor_command_send))
 
 
             # indexOnDHT = hashfunc(command.data['name'])
@@ -119,6 +219,6 @@ def threaded_listen(node):
 
 def hashfunc(name):
     index = (int((hashlib.sha1(name.encode())).hexdigest(),16)) % (2 ** DHT_BITS)
-    print('hash of the node that you just made:')
+    print('hash:')
     print(index)
     return index

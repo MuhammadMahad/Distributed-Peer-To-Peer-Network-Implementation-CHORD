@@ -29,18 +29,18 @@ while True:
 
     if(choice == '1' and created == False):
 
-        node = Node.create(node, my_ip, int(my_port))
+        node = Node.create(node, my_ip, int(my_port), None, node)
         #node = Node.create(node, my_ip, int(my_port), None, None)
         #create a new node/ring. call create
         created = True
     elif(choice == '2' and joined == False):
 
-        ip = input('Enter IP of existing node in ring:\n')
-        port = input('Enter port of existing node in ring:\n')
+        n_ip = input('Enter IP of existing node in ring:\n')
+        n_port = input('Enter port of existing node in ring:\n')
         #name = ip.join(str(port))
-        name = my_ip + str(my_port)
+        #name = my_ip + str(my_port)
 
-
+        node = Node.join(node, my_ip, my_port, n_ip, n_port)
         # join_data = {
         #
         #     'name': name
