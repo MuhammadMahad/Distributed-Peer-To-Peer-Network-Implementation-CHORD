@@ -27,19 +27,23 @@ class Node:
     # ask node n to find the successor of id
     def find_successor(self, node_id):
         if self.id < node_id <= self.finger_table[0].id:
-            successor = {
-                "successor": self.finger_table[0]
-            }
-            return successor
+            # successor = {
+            #     "successor": self.finger_table[0]
+            # }
+            return self.finger_table[0]
         else:
             max_less_than_k = self.closest_preceding_node(node_id)
+            if max_less_than_k.id == self.id:
+                return max_less_than_k
+
             successor_data = {
-                'name': max_less_than_k.name
+                'hash': node_id
             }
             successor_command = Command('FIND_SUCCESSOR', successor_data)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             send_command(s, max_less_than_k.ip, max_less_than_k.port, successor_command)
-            return receive_command(s)
+            receive_command_data = receive_command(s)
+            return receive_command_data.data["successor"]
 
     def closest_preceding_node(self, node_id):
         max_less_than_k = self.finger_table[0]
@@ -50,8 +54,8 @@ class Node:
 
     @staticmethod
     # create a new Chord ring
-    def create(ip, port):
-        node = Node(ip, port, None)
+    def create(ip, port, successor=None):
+        node = Node(ip, port, successor)
         listening_server(node)
         return node
 
@@ -78,7 +82,19 @@ class Node:
     # successor, and tells the successor about n.
 
     def stabilize(self):
-        start_new_thread(stabilize_thread, (self,))
+        if self.successor and self.successor.predecessor:
+            predecessor = self.successor.predecessor
+            if self.id < predecessor.id < self.successor.id:
+                self.successor = predecessor
+        if self.successor.id == self.id:
+            self.notify(self)
+            return
+        notify_data = {
+            "node": self
+        }
+        notify_command = Command('NOTIFY', notify_data)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        send_command(s, self.successor.ip, self.successor.port, notify_command)
 
     # n' thinks it might be our predecessor
     def notify(self, existing_node):
@@ -89,7 +105,16 @@ class Node:
     # next stores the index of the next finger to fix.
 
     def fix_fingers(self):
-        start_new_thread(fix_fingers_thread, (self,))
+        for i in range(DHT_BITS):
+            node_id = self.id + (2 ** i)
+            successor = self.find_successor(node_id)
+            try:
+                self.finger_table[i] = successor
+            except IndexError:
+                self.finger_table.append(successor)
+
+        for finger in self.finger_table:
+            print("Hash", finger.id)
 
     # called periodically. checks whether predecessor has failed.
     def check_predecessor(self):
@@ -98,35 +123,14 @@ class Node:
 
 def stabilize_thread(node):
     while True:
+        node.stabilize()
         time.sleep(2)
-        if node.successor and node.successor.predecessor:
-            predecessor = node.successor.predecessor
-            if node.id < predecessor.id < node.successor.id:
-                node.successor = predecessor
-        notify_data = {
-            "node": node
-        }
-        notify_command = Command('NOTIFY', notify_data)
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        send_command(s, node.ip, node.port, notify_command)
 
 
 def fix_fingers_thread(node):
     while True:
+        node.fix_fingers()
         time.sleep(4)
-        for i in range(DHT_BITS):
-            successor_data = {
-                "hash": node.id + (2 ** i)
-            }
-            successor_command = Command('FIND_SUCCESSOR', successor_data)
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            send_command(s, node.ip, node.port, successor_command)
-            successor_command_receive = receive_command(s)
-            successor = successor_command_receive.data["successor"]
-            node.finger_table[i] = successor
-
-        for finger in node.finger_table:
-            print("Hash", finger.id)
 
 
 def send_command(s, ip_to_send_to, port_to_send_to, command_to_send):
@@ -138,13 +142,13 @@ def send_command(s, ip_to_send_to, port_to_send_to, command_to_send):
 
 
 def receive_command(s):
-    received_command = pickle.loads(s.recv(1024))
+    received_command = pickle.loads(s.recv(1024*10))
     return received_command
 
 
 def listening_server(node):
-    node.stabilize()
-    node.fix_fingers()
+    start_new_thread(fix_fingers_thread, (node,))
+    start_new_thread(stabilize_thread, (node,))
     start_new_thread(threaded_listen, (node,))
 
 
@@ -168,7 +172,7 @@ def threaded_listen(node):
 
         print("Connected to:", addr)
 
-        command = pickle.loads(conn.recv(1024))
+        command = pickle.loads(conn.recv(1024*10))
 
         if not command:
             print("no data received in command")
@@ -176,14 +180,15 @@ def threaded_listen(node):
 
         if command.type == 'FIND_SUCCESSOR':
             print('Receiving FIND_SUCCESSOR Command')
-            node_id = command.data["hash"]
             if "name" in command.data:
                 node_id = hashfunc(command.data["name"])
+            else:
+                node_id = command.data["hash"]
             n_successor = node.find_successor(node_id)
             successor_data = {
                 "successor": n_successor
             }
-            successor_command_send = ('SENDING_SUCCESSOR', successor_data)
+            successor_command_send = Command('SENDING_SUCCESSOR', successor_data)
             conn.send(pickle.dumps(successor_command_send))
 
         if command.type == 'NOTIFY':
