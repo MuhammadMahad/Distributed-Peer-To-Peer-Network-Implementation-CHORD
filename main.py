@@ -16,18 +16,22 @@ while True:
 
     choice = input('Enter command number to proceed:\n')
 
-    if choice == '1' and created == False:
+    if choice == '1' and not created and not joined:
+        print("Creating")
         node = Node.create(my_ip, int(my_port))
         created = True
-    elif choice == '2' and joined == False:
+        print("Created")
+    elif choice == '2' and not joined and not created:
+        print("Joining")
         n_ip = input('Enter IP of existing node in ring:\n')
         n_port = input('Enter port of existing node in ring:\n')
         node = Node.join(my_ip, my_port, n_ip, n_port)
         joined = True
+        print("Joined")
     elif choice == '3':
         if node:
-            for node in node.finger_table:
-                print("Hash {0}", node.id)
+            for fnode in node.finger_table:
+                print("Hash {0}", fnode.id)
     elif choice == '4':
         if node:
             print('Hash: {0}', node.id)
