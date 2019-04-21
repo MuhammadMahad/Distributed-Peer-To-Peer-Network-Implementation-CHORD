@@ -38,6 +38,7 @@ while True:
             print('Hash: {0}', node.id)
     elif choice == '5':
         filename = input('Enter file name to store \n')
+
         file_to_store = open(filename, 'at')
         value_to_store = input('Enter value to store \n')
         file_to_store.write(value_to_store)
@@ -46,7 +47,12 @@ while True:
 
 
     elif choice == '6':
-        pass
+        filename_to_download = input('Enter file name to download \n')
+        file_value = node.download_file(filename_to_download)
+        filename_to_download = filename_to_download
+        download_file = open(filename_to_download, 'at')
+        download_file.write(file_value)
+
     elif choice == '7':
         print(node.files)
 
