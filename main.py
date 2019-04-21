@@ -39,19 +39,26 @@ while True:
     elif choice == '5':
         filename = input('Enter file name to store \n')
 
-        file_to_store = open(filename, 'at')
+        #file_to_store = open(filename, 'at')
         value_to_store = input('Enter value to store \n')
-        file_to_store.write(value_to_store)
+        #file_to_store.write(value_to_store)
         node.store_file(filename,value_to_store)
 
 
 
     elif choice == '6':
         filename_to_download = input('Enter file name to download \n')
+        download_file = open(filename_to_download + '.txt', 'wt')
+
+
         file_value = node.download_file(filename_to_download)
         filename_to_download = filename_to_download
-        download_file = open(filename_to_download, 'at')
+
+
         download_file.write(file_value)
+
+        download_file.close()
+
 
     elif choice == '7':
         print(node.files)

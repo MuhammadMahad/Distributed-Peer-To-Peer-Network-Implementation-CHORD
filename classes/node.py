@@ -110,12 +110,12 @@ class Node:
             self.files.append(filedict)
 
 
-            append_file_command = Command('APPEND', filedict)
+        append_file_command = Command('APPEND', filedict)
 
-        if file_successor.predecessor.id != self.id:
+        if file_successor.predecessor.id:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             send_command(s, file_successor.predecessor.ip, file_successor.predecessor.port, append_file_command)
-        if file_successor.predecessor.predecessor.id != self.id and file_successor.predecessor.predecessor.id != file_successor.id:
+        if file_successor.predecessor.predecessor.id:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             send_command(s, file_successor.predecessor.predecessor.ip, file_successor.predecessor.predecessor.port, append_file_command)
 
@@ -128,13 +128,13 @@ class Node:
 
             append_file_command = Command('APPEND', filedict)
 
-        if file_successor.id != self.id and file_successor.id != self.predecessor.id:
+        if file_successor.id:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             send_command(s, file_successor.ip, file_successor.port , append_file_command)
-        if file_successor.predecessor.id != self.id:
+        if file_successor.predecessor.id:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             send_command(s, file_successor.predecessor.ip, file_successor.predecessor.port, append_file_command)
-        if file_successor.predecessor.predecessor.id != self.id and file_successor.predecessor.predecessor.id != file_successor.id:
+        if file_successor.predecessor.predecessor.id:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             send_command(s, file_successor.predecessor.predecessor.ip, file_successor.predecessor.predecessor.port, append_file_command)
 
@@ -367,6 +367,7 @@ def threaded_listen(node):
             print('Receiving APPEND Command')
 
             node.files.append(command.data)
+            node.files = [dict(t) for t in {tuple(d.items()) for d in node.files}]
 
         if command.type == 'GET_FILE':
             print('Receiving GET_FILE Command')
