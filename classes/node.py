@@ -23,10 +23,11 @@ class Node:
         # id or h
         self.id = hashfunc(self.name)
         self.finger_table = [self.successor]
+        self.files = []
 
     # ask node n to find the successor of id
     def find_successor(self, node_id):
-        if self.id < node_id <= self.successor.id: # or self.successor.id <= node_id:
+        if self.id < node_id <= self.successor.id:  # or self.successor.id <= node_id:
             # successor = {
             #     "successor": self.finger_table[0]
             # }
@@ -48,7 +49,7 @@ class Node:
     def closest_preceding_node(self, node_id):
         i = 0
         while i < len(self.finger_table) and i < DHT_BITS:
-            if between(self.id , self.finger_table[i].id , node_id):
+            if between(self.id, self.finger_table[i].id, node_id):
                 return self.finger_table[i]
             i += 1
         return self
@@ -79,6 +80,48 @@ class Node:
         node = Node.create(my_ip, my_port, successor)
         return node
 
+    def store_file(self, filename, value):
+        filename_data = {
+
+            "name": filename
+        }
+
+        filename_successor_command = Command('FIND_SUCCESSOR', filename_data)
+
+        n_ip = self.successor.ip
+        n_port = self.successor.port
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        send_command(s, n_ip, n_port, filename_successor_command)
+
+        filename_successor_command_receive = receive_command(s)
+
+        filedict = {
+
+            filename: value
+
+        }
+
+        file_successor = filename_successor_command_receive.data["successor"]
+
+        if file_successor.id == self.id:
+            self.files.append(filedict)
+            self.successor.files.append(filedict)
+            self.predecessor.files.append(filedict)
+            print('file successor:')
+            print(file_successor.id)
+        else:
+            print('file successor:')
+            print(file_successor.id)
+            file_successor.files.append(filedict)
+            file_successor.successor.files.append(filedict)
+            file_successor.predecessor.files.append(filedict)
+
+
+
+    def download_file(self):
+        pass
+
     # called periodically. verifies n’s immediate
     # successor, and tells the successor about n.
 
@@ -101,7 +144,7 @@ class Node:
             receive_predecessor_data = receive_command(s)
             predecessor = receive_predecessor_data.data["predecessor"]
             self.successor.predecessor = predecessor
-        if predecessor and between(self.id , predecessor.id , self.successor.id):
+        if predecessor and between(self.id, predecessor.id, self.successor.id):
             self.successor = predecessor
 
         if self.successor.id == self.id:
@@ -120,8 +163,12 @@ class Node:
 
     # n' thinks it might be our predecessor
     def notify(self, existing_node):
-        if self.predecessor is None or between(self.predecessor.id , existing_node.id ,self.id): # or self.predecessor.id == self.id:
+        if self.predecessor is None or between(self.predecessor.id, existing_node.id,
+                                               self.id):  # or self.predecessor.id == self.id:
             self.predecessor = existing_node
+
+        # elif self.predecessor and existing_node and self.predecessor.id == existing_node.id:
+        #     self.predecessor.predecessor = existing_node.predecessor
 
     # called periodically. refreshes finger table entries.
     # next stores the index of the next finger to fix.
@@ -144,20 +191,45 @@ class Node:
 
     # called periodically. checks whether predecessor has failed.
     def check_predecessor(self):
-        pass
+        if self.predecessor != None:
+            try:
+                alive_data = {
+                    "alive": "Are you alive?"
+                }
+                alive_command = Command('ALIVE', alive_data )
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(5)
+                send_command(s,self.predecessor.ip, self.predecessor.port, alive_command)
+                receive_command(s)
+            except Exception as e:
+                print(e)
+                self.predecessor = None
+
+
 
 
 def stabilize_thread(node):
     while True:
-        node.stabilize()
-        time.sleep(3)
-
+        try:
+            node.stabilize()
+            time.sleep(3)
+        except:
+            pass
 
 def fix_fingers_thread(node):
     while True:
-        node.fix_fingers()
-        time.sleep(6)
-
+        try:
+            node.fix_fingers()
+            time.sleep(6)
+        except:
+            pass
+def check_predecessor_thread(node):
+    while True:
+        try:
+            node.check_predecessor()
+            time.sleep(3)
+        except:
+            pass
 
 def send_command(s, ip_to_send_to, port_to_send_to, command_to_send):
     command_to_send = pickle.dumps(command_to_send)
@@ -168,13 +240,14 @@ def send_command(s, ip_to_send_to, port_to_send_to, command_to_send):
 
 
 def receive_command(s):
-    received_command = pickle.loads(s.recv(1024*10))
+    received_command = pickle.loads(s.recv(1024 * 2000))
     return received_command
 
 
 def listening_server(node):
     start_new_thread(stabilize_thread, (node,))
     start_new_thread(fix_fingers_thread, (node,))
+    start_new_thread(check_predecessor_thread, (node,))
     start_new_thread(threaded_listen, (node,))
 
 
@@ -198,7 +271,7 @@ def threaded_listen(node):
 
         # print("Connected to:", addr)
 
-        command = pickle.loads(conn.recv(1024*10))
+        command = pickle.loads(conn.recv(1024 * 2000))
 
         if not command:
             print("no data received in command")
@@ -231,14 +304,24 @@ def threaded_listen(node):
             predecessor_command_send = Command('SENDING_PREDECESSOR', predecessor_data)
             conn.send(pickle.dumps(predecessor_command_send))
 
+        if command.type == 'ALIVE':
+            # print('Receiving ALIVE Command')
+
+            alive_response_data = {
+                "alive": True
+            }
+            alive_response_send = Command('AM ALIVE', alive_response_data)
+            conn.send(pickle.dumps(alive_response_data))
+
 
 
 def hashfunc(name):
     index = (int((hashlib.sha1(name.encode())).hexdigest(), 16)) % (2 ** DHT_BITS)
     return index
 
+
 def between(node1_id, node2_id, node3_id):
-    if(node1_id < node3_id):
-        return (node1_id < node2_id and node2_id < node3_id)
+    if node1_id < node3_id:
+        return node1_id < node2_id and node2_id < node3_id
     else:
-        return (node1_id < node2_id or node2_id < node3_id)
+        return node1_id < node2_id or node2_id < node3_id

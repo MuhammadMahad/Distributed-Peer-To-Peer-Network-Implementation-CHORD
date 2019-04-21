@@ -12,8 +12,9 @@ while True:
     print('2. Join')
     print('3. Print Finger Table')
     print('4. Print Hash')
-    print('5. Download')
-
+    print('5. Store')
+    print('6. Download')
+    print('7. Print Stored Files')
     choice = input('Enter command number to proceed:\n')
 
     if choice == '1' and not created and not joined:
@@ -36,6 +37,17 @@ while True:
         if node:
             print('Hash: {0}', node.id)
     elif choice == '5':
+        filename = input('Enter file name to store \n')
+        file_to_store = open(filename, 'at')
+        value_to_store = input('Enter value to store \n')
+        file_to_store.write(value_to_store)
+        node.store_file(filename,value_to_store)
+
+
+
+    elif choice == '6':
         pass
+    elif choice == '7':
+        print(node.files)
 
 
