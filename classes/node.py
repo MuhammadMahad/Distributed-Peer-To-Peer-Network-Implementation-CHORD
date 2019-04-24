@@ -188,12 +188,16 @@ class Node:
         if self.id == self.successor.id:
             predecessor = self.successor.predecessor
         else:
-            command = Command('PREDECESSOR', {})
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            send_command(s, self.successor.ip, self.successor.port, command)
-            receive_predecessor_data = receive_command(s)
-            predecessor = receive_predecessor_data.data["predecessor"]
-            self.successor.predecessor = predecessor
+            try:
+                command = Command('PREDECESSOR', {})
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                send_command(s, self.successor.ip, self.successor.port, command)
+                receive_predecessor_data = receive_command(s)
+                predecessor = receive_predecessor_data.data["predecessor"]
+                self.successor.predecessor = predecessor
+            except Exception as e:
+                print(e)
+
         if predecessor and between(self.id, predecessor.id, self.successor.id):
             self.successor = predecessor
 
@@ -235,14 +239,16 @@ class Node:
         # for finger in self.finger_table:
         #     print("Hash", finger.id)
 
-        #print("After Fix Fingers #")
-        #print(self.id, self.successor.id, self.predecessor.id if self.predecessor else None)
-        #print("After Fix Fingers #")
+        print("After Fix Fingers #")
+        print(self.id, self.successor.id, self.predecessor.id if self.predecessor else None)
+        print("After Fix Fingers #")
 
     # called periodically. checks whether predecessor has failed.
     def check_predecessor(self):
         if self.predecessor != None:
             try:
+                if self.id == self.predecessor.id:
+                    return
                 alive_data = {
                     "alive": "Are you alive?"
                 }
@@ -271,8 +277,9 @@ def fix_fingers_thread(node):
         try:
             node.fix_fingers()
             time.sleep(6)
-        except:
-            pass
+        except Exception as e:
+            print(e)
+
 def check_predecessor_thread(node):
     while True:
         try:
@@ -290,7 +297,7 @@ def send_command(s, ip_to_send_to, port_to_send_to, command_to_send):
 
 
 def receive_command(s):
-    received_command = pickle.loads(s.recv(1024 * 2000))
+    received_command = pickle.loads(s.recv(1024 * 10 ** 6))
     return received_command
 
 
@@ -321,7 +328,7 @@ def threaded_listen(node):
 
         # print("Connected to:", addr)
 
-        command = pickle.loads(conn.recv(1024 * 2000))
+        command = pickle.loads(conn.recv(1024 * 10 ** 6))
 
         if not command:
             print("no data received in command")
