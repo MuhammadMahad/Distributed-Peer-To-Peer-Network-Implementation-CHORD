@@ -6,6 +6,7 @@ import pickle
 from classes.command import Command
 import hashlib, time
 from constants import DHT_BITS
+import struct
 
 
 class Node:
@@ -23,7 +24,7 @@ class Node:
         # id or h
         self.id = hashfunc(self.name)
         self.finger_table = [self.successor]
-        self.files = []
+        self.files = {}
 
     # ask node n to find the successor of id
     def find_successor(self, node_id):
@@ -97,80 +98,89 @@ class Node:
         filename_successor_command_receive = receive_command(s)
 
         filedict = {
-
-            filename: value
-
+            "filename": filename,
+            "filedata": value
         }
 
         file_successor = filename_successor_command_receive.data["successor"]
 
-        if file_successor.id == self.id:
-            print('file successor:')
-            print(file_successor.id)
-            self.files.append(filedict)
-
-
-        append_file_command = Command('APPEND', filedict)
-
-        if file_successor.predecessor.id:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            send_command(s, file_successor.predecessor.ip, file_successor.predecessor.port, append_file_command)
-        if file_successor.predecessor.predecessor.id:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            send_command(s, file_successor.predecessor.predecessor.ip, file_successor.predecessor.predecessor.port, append_file_command)
-
-
-        else:
-            print('file successor:')
-            print(file_successor.id)
-
-
-
+        if file_successor is not None:
             append_file_command = Command('APPEND', filedict)
 
-        if file_successor.id:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            send_command(s, file_successor.ip, file_successor.port , append_file_command)
-        if file_successor.predecessor.id:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            send_command(s, file_successor.predecessor.ip, file_successor.predecessor.port, append_file_command)
-        if file_successor.predecessor.predecessor.id:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            send_command(s, file_successor.predecessor.predecessor.ip, file_successor.predecessor.predecessor.port, append_file_command)
+            if file_successor.id == self.id:
+                self.files[filename] = filedict
+            elif file_successor.id:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                send_command(s, file_successor.ip, file_successor.port , append_file_command)
+
+            if file_successor.predecessor and file_successor.predecessor.id:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                send_command(s, file_successor.predecessor.ip, file_successor.predecessor.port, append_file_command)
+                if file_successor.predecessor.predecessor and file_successor.predecessor.predecessor.id:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    send_command(s, file_successor.predecessor.predecessor.ip, file_successor.predecessor.predecessor.port, append_file_command)
+
+        else:
+            print('No Successor found to store file in')
+
+    def get_and_send_stored_file(self, filename, conn=None):
+        if filename and filename in self.files:
+            file_data = self.files[filename]
+            if not conn:
+                return file_data
+            else:
+                download_file_send_back_command = Command('GETTING_FILE', file_data)
+                return send_complete_data(conn, download_file_send_back_command)
+        else:
+            print("No file found")
 
     def download_file(self, filename_to_download):
 
-        filename_data = {
+        # filename_data = {
+        #     "name": filename_to_download
+        # }
+        hash_of_filename = hashfunc(filename_to_download)
+        successor_for_file = self.find_successor(hash_of_filename)
 
-            "name": filename_to_download
-        }
+        if successor_for_file is None:
+            return None
 
-        filename_successor_command = Command('FIND_SUCCESSOR', filename_data)
+        if self.id == successor_for_file.id:
+            return self.get_and_send_stored_file(filename_to_download)
+        else:
+            get_file_data = {
+                "file_name": filename_to_download
+            }
+            file_download_command = Command('GET_FILE', get_file_data)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            send_command(s, successor_for_file.predecessor.ip, successor_for_file.predecessor.port, file_download_command)
+            file_download_command_receive = receive_command(s)
+            return file_download_command_receive.data
 
-        n_ip = self.successor.ip
-        n_port = self.successor.port
-
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        send_command(s, n_ip, n_port, filename_successor_command)
-
-        filename_successor_command_receive = receive_command(s)
-
-        file_successor = filename_successor_command_receive.data["successor"]
-
-        get_file_data = {
-            "file_name" : filename_to_download
-        }
-
-        file_download_command = Command('GET_FILE', get_file_data)
-
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        send_command(s, file_successor.predecessor.ip, file_successor.predecessor.port, file_download_command)
-
-        file_download_command_recieve = receive_command(s)
-
-        file_value = file_download_command_recieve.data[filename_to_download]
-
-        return file_value
+        # filename_successor_command = Command('FIND_SUCCESSOR', filename_data)
+        #
+        # n_ip = self.successor.ip
+        # n_port = self.successor.port
+        #
+        # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # send_command(s, n_ip, n_port, filename_successor_command)
+        #
+        # filename_successor_command_receive = receive_command(s)
+        #
+        # file_successor = filename_successor_command_receive.data["successor"]
+        #
+        # get_file_data = {
+        #     "file_name": filename_to_download
+        # }
+        #
+        # file_download_command = Command('GET_FILE', get_file_data)
+        #
+        # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # send_command(s, file_successor.predecessor.ip, file_successor.predecessor.port, file_download_command)
+        #
+        # file_download_command_recieve = receive_command(s)
+        #
+        # return file_download_command_recieve.data
 
     # called periodically. verifies n’s immediate
     # successor, and tells the successor about n.
@@ -236,16 +246,13 @@ class Node:
             except IndexError:
                 self.finger_table.append(successor)
 
-        # for finger in self.finger_table:
-        #     print("Hash", finger.id)
-
-        print("After Fix Fingers #")
-        print(self.id, self.successor.id, self.predecessor.id if self.predecessor else None)
-        print("After Fix Fingers #")
+        # print("After Fix Fingers #")
+        # print(self.id, self.successor.id, self.predecessor.id if self.predecessor else None)
+        # print("After Fix Fingers #")
 
     # called periodically. checks whether predecessor has failed.
     def check_predecessor(self):
-        if self.predecessor != None:
+        if self.predecessor is not None:
             try:
                 if self.id == self.predecessor.id:
                     return
@@ -262,8 +269,6 @@ class Node:
                 self.predecessor = None
 
 
-
-
 def stabilize_thread(node):
     while True:
         try:
@@ -271,6 +276,7 @@ def stabilize_thread(node):
             time.sleep(3)
         except:
             pass
+
 
 def fix_fingers_thread(node):
     while True:
@@ -280,6 +286,7 @@ def fix_fingers_thread(node):
         except Exception as e:
             print(e)
 
+
 def check_predecessor_thread(node):
     while True:
         try:
@@ -288,17 +295,18 @@ def check_predecessor_thread(node):
         except:
             pass
 
+
 def send_command(s, ip_to_send_to, port_to_send_to, command_to_send):
-    command_to_send = pickle.dumps(command_to_send)
+    # command_to_send = pickle.dumps(command_to_send)
     address = (ip_to_send_to, int(port_to_send_to))
     s.connect(address)
-
-    s.send(command_to_send)
+    send_complete_data(s, command_to_send)
+    # length = struct.pack('!I',len(command_to_send))
+    # s.send(length + command_to_send)
 
 
 def receive_command(s):
-    received_command = pickle.loads(s.recv(1024 * 10 ** 6))
-    return received_command
+    return receive_complete_data(s)
 
 
 def listening_server(node):
@@ -306,6 +314,28 @@ def listening_server(node):
     start_new_thread(fix_fingers_thread, (node,))
     start_new_thread(check_predecessor_thread, (node,))
     start_new_thread(threaded_listen, (node,))
+
+
+def send_complete_data(conn, command):
+    command = pickle.dumps(command)
+    length = struct.pack('!I', len(command))
+    conn.send(length + command)
+
+    # conn.send(pickle.dumps(command))
+
+
+def receive_complete_data(conn):
+    buf = b''
+    while len(buf) < 4:
+        buf += conn.recv(4 - len(buf))
+    length = struct.unpack('!I', buf)[0]
+
+    d = b''
+    while len(d) < length:
+        d += conn.recv(length - len(d))
+
+    received_command = pickle.loads(d)
+    return received_command
 
 
 def threaded_listen(node):
@@ -322,13 +352,9 @@ def threaded_listen(node):
     s.listen(5)
 
     while True:
-        # print("Waiting for a connection, Server Started")
-
         conn, addr = s.accept()
 
-        # print("Connected to:", addr)
-
-        command = pickle.loads(conn.recv(1024 * 10 ** 6))
+        command = receive_complete_data(conn)
 
         if not command:
             print("no data received in command")
@@ -345,7 +371,7 @@ def threaded_listen(node):
                 "successor": n_successor
             }
             successor_command_send = Command('SENDING_SUCCESSOR', successor_data)
-            conn.send(pickle.dumps(successor_command_send))
+            send_complete_data(conn, successor_command_send)
 
         if command.type == 'NOTIFY':
             # print('Receiving NOTIFY Command')
@@ -359,7 +385,7 @@ def threaded_listen(node):
                 "predecessor": predecessor
             }
             predecessor_command_send = Command('SENDING_PREDECESSOR', predecessor_data)
-            conn.send(pickle.dumps(predecessor_command_send))
+            send_complete_data(conn, predecessor_command_send)
 
         if command.type == 'ALIVE':
             # print('Receiving ALIVE Command')
@@ -368,28 +394,17 @@ def threaded_listen(node):
                 "alive": True
             }
             alive_response_send = Command('AM ALIVE', alive_response_data)
-            conn.send(pickle.dumps(alive_response_data))
+            send_complete_data(conn, alive_response_send)
 
         if command.type == 'APPEND':
             print('Receiving APPEND Command')
-
-            node.files.append(command.data)
-            node.files = [dict(t) for t in {tuple(d.items()) for d in node.files}]
+            filename = command.data["filename"]
+            node.files[filename] = command.data
 
         if command.type == 'GET_FILE':
             print('Receiving GET_FILE Command')
-            download_file_dict = {}
-            recieved_filename = command.data["file_name"]
-            for i in range(len(node.files)):
-                if recieved_filename in node.files[i]:
-                    download_file_dict = node.files[i]
-                    break
-
-
-            download_file_send_back_command = Command('GETTING_FILE', download_file_dict)
-            conn.send(pickle.dumps(download_file_send_back_command))
-
-
+            received_filename = command.data["file_name"]
+            node.get_and_send_stored_file(received_filename, conn)
 
 
 def hashfunc(name):

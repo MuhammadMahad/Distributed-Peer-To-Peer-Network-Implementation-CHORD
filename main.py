@@ -24,9 +24,9 @@ while True:
         print("Created")
     elif choice == '2' and not joined and not created:
         print("Joining")
-        n_ip = input('Enter IP of existing node in ring:\n')
+        # n_ip = input('Enter IP of existing node in ring:\n')
         n_port = input('Enter port of existing node in ring:\n')
-        node = Node.join(my_ip, my_port, n_ip, n_port)
+        node = Node.join(my_ip, my_port, "192.168.100.3", n_port)
         joined = True
         print("Joined")
     elif choice == '3':
@@ -37,29 +37,22 @@ while True:
         if node:
             print('Hash: {0}', node.id)
     elif choice == '5':
-        filename = input('Enter file name to store \n')
-
+        # filename = input('Enter file name to store \n')
+        filename = 'image.jpg'
         file_to_store = open(filename, 'rb')
         value_to_store = file_to_store.read()
-        #file_to_store.write(value_to_store)
         file_to_store.close()
         node.store_file(filename,value_to_store)
 
-
-
     elif choice == '6':
         filename_to_download = input('Enter file name to download \n')
-        download_file = open(filename_to_download, 'wb')
-
-
         file_value = node.download_file(filename_to_download)
-        filename_to_download = filename_to_download
-
-
-        download_file.write(file_value)
-
-        download_file.close()
-
+        if file_value and "filedata" in file_value:
+            download_file = open(filename_to_download, 'wb')
+            download_file.write(file_value["filedata"])
+            download_file.close()
+        else:
+            print("Not able to Download file, sorry!")
 
     elif choice == '7':
         print(node.files)
