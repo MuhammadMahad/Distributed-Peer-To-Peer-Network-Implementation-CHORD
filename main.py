@@ -1,5 +1,7 @@
 from classes.node import Node
 import sys
+import hashlib, time
+from constants import DHT_BITS
 
 my_ip = sys.argv[1]
 my_port = int(sys.argv[2])
@@ -15,6 +17,7 @@ while True:
     print('5. Store')
     print('6. Download')
     print('7. Print Stored Files')
+    print('8. Print hash of name')
     choice = input('Enter command number to proceed:\n')
 
     if choice == '1' and not created and not joined:
@@ -38,7 +41,7 @@ while True:
             print('Hash: {0}', node.id)
     elif choice == '5':
         # filename = input('Enter file name to store \n')
-        filename = 'image.jpg'
+        filename = 'a.jfif'
         file_to_store = open(filename, 'rb')
         value_to_store = file_to_store.read()
         file_to_store.close()
@@ -56,5 +59,8 @@ while True:
 
     elif choice == '7':
         print(node.files)
+    elif choice == '8':
+        name = input('Enter name:\n')
+        print((int((hashlib.sha1(name.encode())).hexdigest(), 16)) % (2 ** DHT_BITS))
 
 
