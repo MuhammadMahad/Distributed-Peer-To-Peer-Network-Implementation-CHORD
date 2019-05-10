@@ -397,7 +397,7 @@ def threaded_listen(node):
             send_complete_data(conn, alive_response_send)
 
         if command.type == 'APPEND':
-            print('Receiving APPEND Command')
+            print('Receiving APPEND Command {0}'.format(command.data["filename"]))
             filename = command.data["filename"]
             node.files[filename] = command.data
 
