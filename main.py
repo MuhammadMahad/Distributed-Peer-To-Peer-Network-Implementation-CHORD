@@ -18,18 +18,21 @@ while True:
     print('6. Download')
     print('7. Print Stored Files')
     print('8. Print hash of name')
+    print('9. Print Successor List')
     choice = input('Enter command number to proceed:\n')
 
     if choice == '1' and not created and not joined:
         print("Creating")
         node = Node.create(my_ip, int(my_port))
         created = True
+        node.update_successor_list()
         print("Created")
     elif choice == '2' and not joined and not created:
         print("Joining")
         # n_ip = input('Enter IP of existing node in ring:\n')
         n_port = input('Enter port of existing node in ring:\n')
         node = Node.join(my_ip, my_port, "192.168.100.3", n_port)
+        node.update_successor_list()
         joined = True
         print("Joined")
     elif choice == '3':
@@ -62,5 +65,8 @@ while True:
     elif choice == '8':
         name = input('Enter name:\n')
         print((int((hashlib.sha1(name.encode())).hexdigest(), 16)) % (2 ** DHT_BITS))
+    elif choice == '9':
+        for _s in node.closest_successors:
+            print(_s.id)
 
 

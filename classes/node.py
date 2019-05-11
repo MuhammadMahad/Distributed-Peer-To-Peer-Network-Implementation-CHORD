@@ -5,7 +5,7 @@ from threading import Thread
 import pickle
 from classes.command import Command
 import hashlib, time
-from constants import DHT_BITS
+from constants import DHT_BITS, CLOSEST_SUCCESSOR_LIST_SIZE
 import struct
 
 
@@ -19,6 +19,7 @@ class Node:
             self.successor = self
         else:
             self.successor = successor
+        self.closest_successors = []
 
         self.name = (ip + str(port))
         # id or h
@@ -32,9 +33,11 @@ class Node:
         #     # successor = {
         #     #     "successor": self.finger_table[0]
         #     # }
-        if self.id == node_id:
-            return self
-        if between(self.id, node_id, self.successor.id) or node_id == self.successor.id:
+        # if self.id == node_id:
+        #     return self
+        if node_id == self.id:
+            return self.successor
+        if between_inclusive(self.id, node_id, self.successor.id): # or node_id == self.successor.id:
             return self.successor
         else:
             max_less_than_k = self.closest_preceding_node(node_id)
@@ -83,6 +86,15 @@ class Node:
         successor = successor_command_receive.data["successor"]
         node = Node.create(my_ip, my_port, successor)
         return node
+
+    def update_successor_list(self):
+        self.closest_successors = []
+        if self.successor:
+            _successor = self.successor
+            for i in range(CLOSEST_SUCCESSOR_LIST_SIZE):
+                _successor = self.find_successor(_successor.id + 1)
+                if _successor:
+                    self.closest_successors.append(_successor)
 
     def store_file(self, filename, value):
         filename_data = {
@@ -197,7 +209,8 @@ class Node:
         #     predecessor = self.successor.predecessor
         #     if self.id < predecessor.id < self.successor.id or predecessor.id > self.successor.id:
         #         self.successor = predecessor
-
+        set_successor = True
+        predecessor = None
         if self.id == self.successor.id:
             predecessor = self.successor.predecessor
         else:
@@ -209,13 +222,37 @@ class Node:
                 predecessor = receive_predecessor_data.data["predecessor"]
                 self.successor.predecessor = predecessor
             except Exception as e:
-                print(e)
+                for _successor in self.closest_successors:
+                    if _successor:
+                        try:
+                            if _successor.id == self.id:
+                                self.successor = _successor
+                                self.successor.predecessor = _successor.predecessor
+                                set_successor = False
+                                break
+                            else:
+                                alive_data = {
+                                    "alive": "Are you alive?"
+                                }
+                                alive_command = Command('ALIVE', alive_data)
+                                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                                s.settimeout(5)
+                                send_command(s, _successor.ip, _successor.port, alive_command)
+                                receive_command(s)
+                                self.successor = _successor
+                                self.successor.predecessor = _successor.predecessor
+                                set_successor = False
+                                break
+                        except:
+                            pass
 
-        if predecessor and between(self.id, predecessor.id, self.successor.id):
+        if set_successor and predecessor and between(self.id, predecessor.id, self.successor.id):
             self.successor = predecessor
 
         if self.successor.id == self.id:
-            # self.notify(self)
+            self.predecessor = None
+            self.notify(self)
+            #self.update_successor_list()
             return
         notify_data = {
             "node": self
@@ -223,6 +260,8 @@ class Node:
         notify_command = Command('NOTIFY', notify_data)
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         send_command(s, self.successor.ip, self.successor.port, notify_command)
+
+        self.update_successor_list()
 
         #print("After Stabilize #")
         #print(self.id, self.successor.id, self.predecessor.id if self.predecessor else None)
@@ -287,7 +326,7 @@ def fix_fingers_thread(node):
             node.fix_fingers()
             time.sleep(6)
         except Exception as e:
-            print(e)
+            pass
 
 
 def check_predecessor_thread(node):
@@ -420,3 +459,9 @@ def between(node1_id, node2_id, node3_id):
         return node1_id < node2_id and node2_id < node3_id
     else:
         return node1_id < node2_id or node2_id < node3_id
+
+def between_inclusive(node1_id, node2_id, node3_id):
+    if node1_id < node3_id:
+        return node1_id < node2_id and node2_id <= node3_id
+    else:
+        return node1_id <= node2_id or node2_id < node3_id
