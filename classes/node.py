@@ -212,11 +212,12 @@ class Node:
         set_successor = True
         predecessor = None
         if self.id == self.successor.id:
-            predecessor = self.successor.predecessor
+            predecessor = self.predecessor
         else:
             try:
                 command = Command('PREDECESSOR', {})
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(5)
                 send_command(s, self.successor.ip, self.successor.port, command)
                 receive_predecessor_data = receive_command(s)
                 predecessor = receive_predecessor_data.data["predecessor"]
@@ -227,7 +228,6 @@ class Node:
                         try:
                             if _successor.id == self.id:
                                 self.successor = _successor
-                                self.successor.predecessor = _successor.predecessor
                                 set_successor = False
                                 break
                             else:
@@ -240,7 +240,6 @@ class Node:
                                 send_command(s, _successor.ip, _successor.port, alive_command)
                                 receive_command(s)
                                 self.successor = _successor
-                                self.successor.predecessor = _successor.predecessor
                                 set_successor = False
                                 break
                         except:
@@ -250,7 +249,6 @@ class Node:
             self.successor = predecessor
 
         if self.successor.id == self.id:
-            self.predecessor = None
             self.notify(self)
             #self.update_successor_list()
             return
@@ -389,7 +387,7 @@ def threaded_listen(node):
     try:
         s.bind((server, port))
     except socket.error as e:
-        print(str(e))
+        print(e)
 
     s.listen(5)
 

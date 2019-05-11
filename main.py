@@ -19,6 +19,7 @@ while True:
     print('7. Print Stored Files')
     print('8. Print hash of name')
     print('9. Print Successor List')
+    print('10. Leave')
     choice = input('Enter command number to proceed:\n')
 
     if choice == '1' and not created and not joined:
@@ -68,5 +69,6 @@ while True:
     elif choice == '9':
         for _s in node.closest_successors:
             print(_s.id)
-
+    elif choice == '10':
+        exit()
 
