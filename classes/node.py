@@ -28,10 +28,13 @@ class Node:
 
     # ask node n to find the successor of id
     def find_successor(self, node_id):
-        if self.id < node_id <= self.successor.id:  # or self.successor.id <= node_id:
-            # successor = {
-            #     "successor": self.finger_table[0]
-            # }
+        # if self.id < node_id <= self.successor.id:  # or self.successor.id <= node_id:
+        #     # successor = {
+        #     #     "successor": self.finger_table[0]
+        #     # }
+        if self.id == node_id:
+            return self
+        if between(self.id, node_id, self.successor.id) or node_id == self.successor.id:
             return self.successor
         else:
             max_less_than_k = self.closest_preceding_node(node_id)
@@ -239,7 +242,7 @@ class Node:
 
     def fix_fingers(self):
         for i in range(DHT_BITS):
-            node_id = self.id + (2 ** i) % (2 ** DHT_BITS)
+            node_id = (self.id + (2 ** i)) % (2 ** DHT_BITS)
             successor = self.find_successor(node_id)
             try:
                 self.finger_table[i] = successor
